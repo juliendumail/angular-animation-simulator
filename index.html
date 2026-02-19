@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angular Animation Simulator</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+.header { padding: 10px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.logo { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #8b5cf6, #6366f1); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; }
+.header-title { font-size: 13px; font-weight: 600; }
+.header-sub { font-size: 10px; color: #64748b; }
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* Left Panel */
+.panel-left { width: 300px; border-right: 1px solid #1e293b; overflow-y: auto; padding: 12px; flex-shrink: 0; }
+.section { background: #1e293b; border-radius: 7px; padding: 10px; margin-bottom: 12px; border: 1px solid transparent; }
+.section-timing { background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.2); }
+.section-from { background: rgba(249,115,22,0.08); border-color: rgba(249,115,22,0.2); }
+.section-to { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2); }
+.section-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px; }
+.field-label { font-size: 10px; color: #94a3b8; font-weight: 500; margin-bottom: 3px; }
+.text-input { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 5px; padding: 5px 8px; color: #e2e8f0; font-size: 11px; font-family: monospace; outline: none; }
+
+/* Mode toggle */
+.mode-toggle { display: flex; gap: 0; margin-bottom: 12px; border-radius: 6px; overflow: hidden; border: 1px solid #334155; }
+.mode-btn { flex: 1; padding: 6px 8px; font-size: 10px; font-weight: 600; background: #0f172a; color: #64748b; border: none; cursor: pointer; text-align: center; transition: all 0.15s; }
+.mode-btn.active { background: #8b5cf6; color: #fff; }
+
+/* Presets */
+.presets { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 12px; }
+.preset-btn { background: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 2px 7px; font-size: 9px; color: #94a3b8; cursor: pointer; transition: all 0.15s; }
+.preset-btn:hover { border-color: #8b5cf6; color: #c4b5fd; }
+.preset-btn.active { background: #8b5cf6; border-color: #8b5cf6; color: #fff; }
+
+/* Slider */
+.slider-row { margin-bottom: 7px; }
+.slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.slider-label { font-size: 10px; color: #94a3b8; font-weight: 500; }
+.slider-value { font-size: 10px; color: #e2e8f0; font-family: monospace; }
+.num-input { width: 52px; background: #0f172a; border: 1px solid #334155; border-radius: 4px; padding: 2px 4px; color: #e2e8f0; font-size: 10px; font-family: monospace; text-align: right; outline: none; -moz-appearance: textfield; }
+.num-input:focus { border-color: #8b5cf6; }
+.num-input::-webkit-inner-spin-button, .num-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.slider-input-row { display: flex; align-items: center; gap: 6px; }
+.slider-input-row input[type="range"] { flex: 1; }
+.slider-input-row .unit { font-size: 9px; color: #64748b; min-width: 16px; }
+input[type="range"] { height: 4px; -webkit-appearance: none; appearance: none; background: #334155; border-radius: 2px; outline: none; cursor: pointer; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #8b5cf6; cursor: pointer; border: 2px solid #0f172a; }
+select { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 4px; padding: 4px 6px; color: #e2e8f0; font-size: 10px; font-family: monospace; outline: none; cursor: pointer; }
+.checkbox-row { margin-bottom: 12px; display: flex; align-items: center; gap: 6px; font-size: 10px; color: #94a3b8; }
+.checkbox-row input { accent-color: #8b5cf6; }
+
+/* Keyframe steps */
+.step-card { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px; margin-bottom: 8px; position: relative; }
+.step-card.active-step { border-color: #8b5cf6; }
+.step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.step-label { font-size: 10px; font-weight: 600; color: #c4b5fd; }
+.step-offset { font-size: 9px; color: #64748b; font-family: monospace; }
+.step-remove { background: none; border: none; color: #ef4444; font-size: 12px; cursor: pointer; padding: 0 4px; opacity: 0.6; }
+.step-remove:hover { opacity: 1; }
+.add-step-btn { width: 100%; padding: 6px; background: #0f172a; border: 1px dashed #334155; border-radius: 6px; color: #8b5cf6; font-size: 10px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s; }
+.add-step-btn:hover { border-color: #8b5cf6; background: #1e1b4b; }
+
+/* Right Panel */
+.panel-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.tabs { display: flex; border-bottom: 1px solid #1e293b; flex-shrink: 0; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 9px 16px; font-size: 12px; font-weight: 500; color: #64748b; cursor: pointer; }
+.tab-btn.active { border-bottom-color: #8b5cf6; color: #e2e8f0; }
+
+/* Preview */
+.preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
+.progress-bar { position: absolute; top: 10px; left: 20px; right: 20px; display: flex; align-items: center; gap: 5px; }
+.progress-label { font-size: 9px; color: #64748b; min-width: 28px; }
+.progress-track { flex: 1; height: 3px; background: #1e293b; border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #3b82f6); border-radius: 2px; width: 0%; }
+.preview-container { position: relative; width: 240px; height: 160px; display: flex; align-items: center; justify-content: center; }
+.ghost-box { position: absolute; width: 120px; height: 68px; border-radius: 10px; border: 1.5px dashed #334155; opacity: 0.25; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #475569; }
+.anim-box { position: absolute; width: 120px; height: 68px; border-radius: 10px; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%); box-shadow: 0 6px 24px rgba(139,92,246,0.25); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 12px; }
+.play-btn { margin-top: 24px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border: none; border-radius: 7px; padding: 8px 24px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
+.play-btn:disabled { background: #334155; box-shadow: none; cursor: not-allowed; }
+.chips { display: flex; gap: 5px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+.chip { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 2px 8px; font-size: 9px; color: #94a3b8; font-family: monospace; }
+
+/* Code */
+.code-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+.code-header { display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; background: #1e293b; border-bottom: 1px solid #334155; flex-shrink: 0; }
+.code-header span { font-size: 10px; color: #64748b; font-family: monospace; }
+.copy-btn { background: #8b5cf6; border: none; border-radius: 4px; padding: 4px 12px; color: #fff; font-size: 10px; font-weight: 600; cursor: pointer; }
+.copy-btn.copied { background: #22c55e; }
+.share-btn { background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; border-radius: 5px; padding: 5px 14px; color: #fff; font-size: 10px; font-weight: 600; cursor: pointer; margin-left: auto; display: flex; align-items: center; gap: 4px; transition: all 0.15s; }
+.share-btn:hover { filter: brightness(1.15); }
+.share-btn.copied { background: #22c55e; }
+.import-line { padding: 7px 12px; background: #0c1425; border-bottom: 1px solid #1e293b; font-size: 10px; color: #64748b; font-family: monospace; flex-shrink: 0; }
+.code-block { flex: 1; overflow: auto; padding: 12px; background: #0f172a; }
+.code-block pre { margin: 0; font-size: 11px; line-height: 1.55; color: #e2e8f0; font-family: monospace; white-space: pre-wrap; word-break: break-word; }
+.usage-block { padding: 10px; background: #1e293b; border-top: 1px solid #334155; flex-shrink: 0; }
+.usage-block .label { font-size: 9px; color: #64748b; margin-bottom: 3px; font-weight: 600; }
+.usage-block pre { margin: 0; font-size: 9px; color: #94a3b8; font-family: monospace; line-height: 1.4; }
+
+/* Timeline dots */
+.timeline { display: flex; align-items: center; gap: 0; margin: 12px 0 4px; position: relative; width: 100%; }
+.timeline-track { flex: 1; height: 2px; background: #334155; position: relative; }
+.timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6; border: 2px solid #0f172a; cursor: pointer; position: absolute; top: -4px; z-index: 2; }
+.timeline-dot:hover { background: #a78bfa; }
+.timeline-dot.selected { background: #f97316; box-shadow: 0 0 6px rgba(249,115,22,0.5); }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">A</div>
+  <div>
+    <div class="header-title">Angular Animation Simulator</div>
+    <div class="header-sub">Configure, preview & copy — simple or keyframes</div>
+  </div>
+  <button class="share-btn" id="shareBtn">&#128279; Copy Link</button>
+</div>
+
+<div class="main">
+  <div class="panel-left">
+    <!-- Trigger Name -->
+    <div style="margin-bottom:12px">
+      <div class="field-label">Trigger Name</div>
+      <input type="text" id="triggerName" class="text-input" value="myAnimation">
+    </div>
+
+    <!-- Mode toggle -->
+    <div class="mode-toggle">
+      <button class="mode-btn active" data-mode="simple">Simple (A → B)</button>
+      <button class="mode-btn" data-mode="keyframes">Keyframes (multi-step)</button>
+    </div>
+
+    <!-- Presets -->
+    <div style="margin-bottom:6px"><div class="field-label">Presets</div></div>
+    <div class="presets" id="presets"></div>
+
+    <label class="checkbox-row">
+      <input type="checkbox" id="enterLeave" checked>
+      :enter / :leave mode
+    </label>
+
+    <!-- Timing -->
+    <div class="section section-timing">
+      <div class="section-title" style="color:#8b5cf6">Timing</div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">Duration</span></div>
+        <div class="slider-input-row"><input type="range" id="duration" min="50" max="2000" step="50" value="400"><input type="number" class="num-input" id="durationNum" min="10" max="5000" step="10" value="400"><span class="unit">ms</span></div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">Delay</span></div>
+        <div class="slider-input-row"><input type="range" id="delay" min="0" max="1000" step="50" value="0"><input type="number" class="num-input" id="delayNum" min="0" max="5000" step="10" value="0"><span class="unit">ms</span></div>
+      </div>
+      <div class="field-label">Easing</div>
+      <select id="easing">
+        <option value="ease">ease</option>
+        <option value="ease-in">ease-in</option>
+        <option value="ease-out" selected>ease-out</option>
+        <option value="ease-in-out">ease-in-out</option>
+        <option value="linear">linear</option>
+        <option value="cubic-bezier(.4,0,.2,1)">cubic-bezier(.4,0,.2,1)</option>
+        <option value="cubic-bezier(.6,.04,.98,.34)">cubic-bezier(.6,.04,.98,.34)</option>
+        <option value="cubic-bezier(.08,.82,.17,1)">cubic-bezier(.08,.82,.17,1)</option>
+      </select>
+    </div>
+
+    <!-- Simple mode panels -->
+    <div id="simplePanel">
+      <div class="section section-from">
+        <div class="section-title" style="color:#f97316">From State</div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">Opacity</span></div><div class="slider-input-row"><input type="range" id="fromOpacity" min="0" max="1" step="0.1" value="0"><input type="number" class="num-input" id="fromOpacityNum" min="0" max="1" step="0.05" value="0"></div></div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">X</span></div><div class="slider-input-row"><input type="range" id="fromX" min="-200" max="200" value="-60"><input type="number" class="num-input" id="fromXNum" min="-500" max="500" step="1" value="-60"><span class="unit">px</span></div></div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">Y</span></div><div class="slider-input-row"><input type="range" id="fromY" min="-200" max="200" value="0"><input type="number" class="num-input" id="fromYNum" min="-500" max="500" step="1" value="0"><span class="unit">px</span></div></div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">Scale</span></div><div class="slider-input-row"><input type="range" id="fromScale" min="0" max="2" step="0.1" value="1"><input type="number" class="num-input" id="fromScaleNum" min="0" max="5" step="0.05" value="1"></div></div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">Rotate</span></div><div class="slider-input-row"><input type="range" id="fromRotate" min="-360" max="360" step="5" value="0"><input type="number" class="num-input" id="fromRotateNum" min="-720" max="720" step="1" value="0"><span class="unit">deg</span></div></div>
+      </div>
+      <div class="section section-to">
+        <div class="section-title" style="color:#22c55e">To State</div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">Opacity</span></div><div class="slider-input-row"><input type="range" id="toOpacity" min="0" max="1" step="0.1" value="1"><input type="number" class="num-input" id="toOpacityNum" min="0" max="1" step="0.05" value="1"></div></div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">X</span></div><div class="slider-input-row"><input type="range" id="toX" min="-200" max="200" value="0"><input type="number" class="num-input" id="toXNum" min="-500" max="500" step="1" value="0"><span class="unit">px</span></div></div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">Y</span></div><div class="slider-input-row"><input type="range" id="toY" min="-200" max="200" value="0"><input type="number" class="num-input" id="toYNum" min="-500" max="500" step="1" value="0"><span class="unit">px</span></div></div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">Scale</span></div><div class="slider-input-row"><input type="range" id="toScale" min="0" max="2" step="0.1" value="1"><input type="number" class="num-input" id="toScaleNum" min="0" max="5" step="0.05" value="1"></div></div>
+        <div class="slider-row"><div class="slider-header"><span class="slider-label">Rotate</span></div><div class="slider-input-row"><input type="range" id="toRotate" min="-360" max="360" step="5" value="0"><input type="number" class="num-input" id="toRotateNum" min="-720" max="720" step="1" value="0"><span class="unit">deg</span></div></div>
+      </div>
+    </div>
+
+    <!-- Keyframes mode panel -->
+    <div id="keyframesPanel" style="display:none">
+      <div id="stepsContainer"></div>
+      <button class="add-step-btn" id="addStepBtn">+ Add Step</button>
+    </div>
+  </div>
+
+  <div class="panel-right">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="preview">Preview</button>
+      <button class="tab-btn" data-tab="code">Angular Code</button>
+    </div>
+
+    <div class="preview-area" id="previewTab">
+      <div class="progress-bar">
+        <span class="progress-label">0ms</span>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-label" id="totalTime">400ms</span>
+      </div>
+      <div class="preview-container">
+        <div class="ghost-box" id="ghostBox">start</div>
+        <div class="anim-box" id="animBox">Component</div>
+      </div>
+      <button class="play-btn" id="playBtn">&#9654;  Play Animation</button>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div class="code-view" id="codeTab">
+      <div class="code-header">
+        <span>@angular/animations</span>
+        <button class="copy-btn" id="copyBtn">Copy Code</button>
+      </div>
+      <div class="import-line" id="importLine"></div>
+      <div class="code-block"><pre id="codeOutput"></pre></div>
+      <div class="usage-block">
+        <div class="label">Usage in component:</div>
+        <pre id="usageOutput"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ STATE ============
+var S = {
+  mode: 'simple', // 'simple' | 'keyframes'
+  from: { opacity: 0, x: -60, y: 0, scale: 1, rotate: 0 },
+  to: { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+  // Keyframes steps: array of { offset, opacity, x, y, scale, rotate }
+  steps: [
+    { offset: 0, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.5, opacity: 1, x: 0, y: 0, scale: 1.3, rotate: 0 },
+    { offset: 1, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+  ],
+  selectedStep: 0,
+  duration: 400, delay: 0, easing: 'ease-out',
+  triggerName: 'myAnimation', enterLeave: true,
+  activePreset: null
+};
+
+// ============ PRESETS ============
+var SIMPLE_PRESETS = [
+  { name: "Fade In", from: { opacity: 0, x: 0, y: 0, scale: 1, rotate: 0 }, to: { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }, duration: 300, delay: 0, easing: "ease-in" },
+  { name: "Fade Out", from: { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }, to: { opacity: 0, x: 0, y: 0, scale: 1, rotate: 0 }, duration: 300, delay: 0, easing: "ease-out" },
+  { name: "Slide Left", from: { opacity: 0, x: -100, y: 0, scale: 1, rotate: 0 }, to: { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }, duration: 400, delay: 0, easing: "ease-out" },
+  { name: "Slide Right", from: { opacity: 0, x: 100, y: 0, scale: 1, rotate: 0 }, to: { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }, duration: 400, delay: 0, easing: "ease-out" },
+  { name: "Slide Up", from: { opacity: 0, x: 0, y: 40, scale: 1, rotate: 0 }, to: { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }, duration: 400, delay: 0, easing: "ease-out" },
+  { name: "Scale In", from: { opacity: 0, x: 0, y: 0, scale: 0.5, rotate: 0 }, to: { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }, duration: 350, delay: 0, easing: "cubic-bezier(.4,0,.2,1)" },
+  { name: "Rotate In", from: { opacity: 0, x: 0, y: 0, scale: 0.8, rotate: -15 }, to: { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }, duration: 500, delay: 0, easing: "cubic-bezier(.08,.82,.17,1)" },
+];
+
+var KF_PRESETS = [
+  { name: "Pulse", steps: [
+    { offset: 0, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.5, opacity: 1, x: 0, y: 0, scale: 1.15, rotate: 0 },
+    { offset: 1, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+  ], duration: 500, delay: 0, easing: "ease-in-out" },
+  { name: "Heartbeat", steps: [
+    { offset: 0, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.15, opacity: 1, x: 0, y: 0, scale: 1.25, rotate: 0 },
+    { offset: 0.3, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.45, opacity: 1, x: 0, y: 0, scale: 1.15, rotate: 0 },
+    { offset: 1, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+  ], duration: 800, delay: 0, easing: "ease-in-out" },
+  { name: "Shake", steps: [
+    { offset: 0, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.2, opacity: 1, x: -10, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.4, opacity: 1, x: 10, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.6, opacity: 1, x: -10, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.8, opacity: 1, x: 5, y: 0, scale: 1, rotate: 0 },
+    { offset: 1, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+  ], duration: 500, delay: 0, easing: "ease-out" },
+  { name: "Bounce", steps: [
+    { offset: 0, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.3, opacity: 1, x: 0, y: -20, scale: 1.05, rotate: 0 },
+    { offset: 0.5, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.7, opacity: 1, x: 0, y: -10, scale: 1.02, rotate: 0 },
+    { offset: 1, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+  ], duration: 600, delay: 0, easing: "ease-out" },
+  { name: "Wobble", steps: [
+    { offset: 0, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.15, opacity: 1, x: -15, y: 0, scale: 1, rotate: -5 },
+    { offset: 0.3, opacity: 1, x: 10, y: 0, scale: 1, rotate: 3 },
+    { offset: 0.45, opacity: 1, x: -10, y: 0, scale: 1, rotate: -3 },
+    { offset: 0.6, opacity: 1, x: 5, y: 0, scale: 1, rotate: 2 },
+    { offset: 1, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+  ], duration: 700, delay: 0, easing: "ease-in-out" },
+  { name: "Zoom Pulse", steps: [
+    { offset: 0, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+    { offset: 0.5, opacity: 0.8, x: 0, y: 0, scale: 1.4, rotate: 0 },
+    { offset: 1, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+  ], duration: 600, delay: 0, easing: "ease-in-out" },
+  { name: "Spin Bounce", steps: [
+    { offset: 0, opacity: 0, x: 0, y: 0, scale: 0.3, rotate: -180 },
+    { offset: 0.6, opacity: 1, x: 0, y: 0, scale: 1.1, rotate: 10 },
+    { offset: 1, opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 },
+  ], duration: 700, delay: 0, easing: "cubic-bezier(.08,.82,.17,1)" },
+];
+
+// ============ HELPERS ============
+function buildTransform(s) {
+  var p = [];
+  if (s.x !== 0 || s.y !== 0) p.push('translate(' + s.x + 'px,' + s.y + 'px)');
+  if (s.scale !== 1) p.push('scale(' + s.scale + ')');
+  if (s.rotate !== 0) p.push('rotate(' + s.rotate + 'deg)');
+  return p.length ? p.join(' ') : 'none';
+}
+
+function styleProps(s) {
+  var r = [];
+  if (s.opacity !== undefined && s.opacity !== 1) r.push('opacity: ' + s.opacity);
+  var t = [];
+  if (s.x !== 0 || s.y !== 0) t.push('translate(' + s.x + 'px, ' + s.y + 'px)');
+  if (s.scale !== 1) t.push('scale(' + s.scale + ')');
+  if (s.rotate !== 0) t.push('rotate(' + s.rotate + 'deg)');
+  if (t.length) r.push('transform: ' + t.join(' '));
+  return r;
+}
+
+// ============ CODE GENERATION ============
+function generateSimpleCode() {
+  var f = S.from, t = S.to, delStr = S.delay > 0 ? ' ' + S.delay + 'ms' : '';
+  var timing = S.duration + 'ms' + delStr + ' ' + S.easing;
+  var fs = [], ts = [];
+  if (f.opacity !== t.opacity) { fs.push('      opacity: ' + f.opacity); ts.push('      opacity: ' + t.opacity); }
+  var fT = [], tT = [];
+  if (f.x !== t.x || f.y !== t.y) { fT.push('translate(' + f.x + 'px, ' + f.y + 'px)'); tT.push('translate(' + t.x + 'px, ' + t.y + 'px)'); }
+  if (f.scale !== t.scale) { fT.push('scale(' + f.scale + ')'); tT.push('scale(' + t.scale + ')'); }
+  if (f.rotate !== t.rotate) { fT.push('rotate(' + f.rotate + 'deg)'); tT.push('rotate(' + t.rotate + 'deg)'); }
+  if (fT.length) { fs.push('      transform: ' + fT.join(' ')); ts.push('      transform: ' + tT.join(' ')); }
+  var fStr = fs.length ? fs.join(',\n') : '      /* no change */';
+  var tStr = ts.length ? ts.join(',\n') : '      /* no change */';
+  var n = S.triggerName;
+  if (S.enterLeave) {
+    return "trigger('" + n + "', [\n  transition(':enter', [\n    style({\n" + fStr + "\n    }),\n    animate('" + timing + "', style({\n" + tStr + "\n    }))\n  ]),\n  transition(':leave', [\n    animate('" + timing + "', style({\n" + fStr + "\n    }))\n  ])\n])";
+  }
+  return "trigger('" + n + "', [\n  state('inactive', style({\n" + fStr + "\n  })),\n  state('active', style({\n" + tStr + "\n  })),\n  transition('inactive => active', [\n    animate('" + timing + "')\n  ]),\n  transition('active => inactive', [\n    animate('" + timing + "')\n  ])\n])";
+}
+
+function generateKeyframesCode() {
+  var n = S.triggerName;
+  var delStr = S.delay > 0 ? ' ' + S.delay + 'ms' : '';
+  var timing = S.duration + 'ms' + delStr + ' ' + S.easing;
+
+  var kfLines = S.steps.map(function(step) {
+    var props = [];
+    props.push('opacity: ' + step.opacity);
+    var t = [];
+    if (step.x !== 0 || step.y !== 0) t.push('translate(' + step.x + 'px, ' + step.y + 'px)');
+    if (step.scale !== 1) t.push('scale(' + step.scale + ')');
+    if (step.rotate !== 0) t.push('rotate(' + step.rotate + 'deg)');
+    if (t.length) props.push('transform: ' + t.join(' '));
+    props.push('offset: ' + step.offset);
+    return '      style({ ' + props.join(', ') + ' })';
+  });
+
+  var transition = S.enterLeave ? "':enter'" : "'inactive => active'";
+  var body = "trigger('" + n + "', [\n";
+  if (!S.enterLeave) {
+    body += "  state('inactive', style({})),\n  state('active', style({})),\n";
+  }
+  body += "  transition(" + transition + ", [\n    animate('" + timing + "', keyframes([\n" + kfLines.join(',\n') + "\n    ]))\n  ])\n])";
+  return body;
+}
+
+function generateCode() {
+  return S.mode === 'simple' ? generateSimpleCode() : generateKeyframesCode();
+}
+
+// ============ DOM REFS ============
+var animBox = document.getElementById('animBox');
+var ghostBox = document.getElementById('ghostBox');
+var progressFill = document.getElementById('progressFill');
+var playBtn = document.getElementById('playBtn');
+var copyBtn = document.getElementById('copyBtn');
+var codeOutput = document.getElementById('codeOutput');
+var usageOutput = document.getElementById('usageOutput');
+var importLine = document.getElementById('importLine');
+var totalTimeEl = document.getElementById('totalTime');
+var chipsEl = document.getElementById('chips');
+
+// ============ MODE TOGGLE ============
+document.querySelectorAll('.mode-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    S.mode = btn.dataset.mode;
+    S.activePreset = null;
+    document.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.mode === S.mode); });
+    document.getElementById('simplePanel').style.display = S.mode === 'simple' ? 'block' : 'none';
+    document.getElementById('keyframesPanel').style.display = S.mode === 'keyframes' ? 'block' : 'none';
+    renderPresets();
+    if (S.mode === 'keyframes') renderSteps();
+    updateAll();
+  });
+});
+
+// ============ PRESETS ============
+function renderPresets() {
+  var container = document.getElementById('presets');
+  container.innerHTML = '';
+  var list = S.mode === 'simple' ? SIMPLE_PRESETS : KF_PRESETS;
+  list.forEach(function(p) {
+    var btn = document.createElement('button');
+    btn.className = 'preset-btn' + (S.activePreset === p.name ? ' active' : '');
+    btn.textContent = p.name;
+    btn.addEventListener('click', function() {
+      S.activePreset = p.name;
+      S.duration = p.duration;
+      S.delay = p.delay;
+      S.easing = p.easing;
+      if (S.mode === 'simple') {
+        S.from = JSON.parse(JSON.stringify(p.from));
+        S.to = JSON.parse(JSON.stringify(p.to));
+        syncSimpleUI();
+      } else {
+        S.steps = JSON.parse(JSON.stringify(p.steps));
+        S.selectedStep = 0;
+        renderSteps();
+      }
+      syncTimingUI();
+      updateAll();
+    });
+    container.appendChild(btn);
+  });
+}
+
+// ============ KEYFRAMES STEPS ============
+function renderSteps() {
+  var container = document.getElementById('stepsContainer');
+  container.innerHTML = '';
+  S.steps.forEach(function(step, i) {
+    var card = document.createElement('div');
+    card.className = 'step-card' + (i === S.selectedStep ? ' active-step' : '');
+    card.addEventListener('click', function() { S.selectedStep = i; renderSteps(); });
+
+    var header = document.createElement('div');
+    header.className = 'step-header';
+    header.innerHTML = '<span class="step-label">Step ' + (i + 1) + '</span><span class="step-offset">' + Math.round(step.offset * 100) + '%</span>';
+
+    if (S.steps.length > 2 && i > 0 && i < S.steps.length - 1) {
+      var removeBtn = document.createElement('button');
+      removeBtn.className = 'step-remove';
+      removeBtn.textContent = '\u2715';
+      removeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        S.steps.splice(i, 1);
+        if (S.selectedStep >= S.steps.length) S.selectedStep = S.steps.length - 1;
+        S.activePreset = null;
+        renderSteps();
+        updateAll();
+      });
+      header.appendChild(removeBtn);
+    }
+    card.appendChild(header);
+
+    if (i === S.selectedStep) {
+      // Offset slider (not for first/last)
+      if (i > 0 && i < S.steps.length - 1) {
+        card.appendChild(makeStepSlider('Offset', step.offset, 0, 1, 0.05, '', function(v) { step.offset = v; sortSteps(); renderSteps(); updateAll(); }));
+      }
+      card.appendChild(makeStepSlider('Opacity', step.opacity, 0, 1, 0.1, '', function(v) { step.opacity = v; updateAll(); }));
+      card.appendChild(makeStepSlider('X', step.x, -200, 200, 1, 'px', function(v) { step.x = v; updateAll(); }));
+      card.appendChild(makeStepSlider('Y', step.y, -200, 200, 1, 'px', function(v) { step.y = v; updateAll(); }));
+      card.appendChild(makeStepSlider('Scale', step.scale, 0, 3, 0.1, '', function(v) { step.scale = v; updateAll(); }));
+      card.appendChild(makeStepSlider('Rotate', step.rotate, -360, 360, 5, 'deg', function(v) { step.rotate = v; updateAll(); }));
+    }
+    container.appendChild(card);
+  });
+}
+
+function makeStepSlider(label, value, min, max, step, unit, onChange) {
+  var row = document.createElement('div');
+  row.className = 'slider-row';
+  var hdr = document.createElement('div');
+  hdr.className = 'slider-header';
+  hdr.innerHTML = '<span class="slider-label">' + label + '</span>';
+  row.appendChild(hdr);
+
+  var inputRow = document.createElement('div');
+  inputRow.className = 'slider-input-row';
+
+  var slider = document.createElement('input');
+  slider.type = 'range'; slider.min = min; slider.max = max; slider.step = step; slider.value = value;
+
+  var numInput = document.createElement('input');
+  numInput.type = 'number'; numInput.className = 'num-input';
+  // Wider range for number input, but keep offset at 0-1
+  var nMin = (min === 0 && max === 1) ? 0 : min * 2;
+  var nMax = (min === 0 && max === 1) ? 1 : max * 2;
+  numInput.min = nMin; numInput.max = nMax; numInput.step = step; numInput.value = value;
+
+  slider.addEventListener('input', function() {
+    var v = parseFloat(this.value);
+    numInput.value = v;
+    S.activePreset = null;
+    onChange(v);
+  });
+  slider.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  numInput.addEventListener('input', function() {
+    var v = parseFloat(this.value);
+    if (isNaN(v)) return;
+    var sv = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), v));
+    slider.value = sv;
+    S.activePreset = null;
+    onChange(v);
+  });
+  numInput.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  inputRow.appendChild(slider);
+  inputRow.appendChild(numInput);
+  if (unit) {
+    var unitSpan = document.createElement('span');
+    unitSpan.className = 'unit';
+    unitSpan.textContent = unit;
+    inputRow.appendChild(unitSpan);
+  }
+  row.appendChild(inputRow);
+  return row;
+}
+
+function sortSteps() {
+  var sel = S.steps[S.selectedStep];
+  S.steps.sort(function(a, b) { return a.offset - b.offset; });
+  S.selectedStep = S.steps.indexOf(sel);
+}
+
+document.getElementById('addStepBtn').addEventListener('click', function() {
+  // Find biggest gap
+  var maxGap = 0, insertIdx = 1;
+  for (var i = 0; i < S.steps.length - 1; i++) {
+    var gap = S.steps[i + 1].offset - S.steps[i].offset;
+    if (gap > maxGap) { maxGap = gap; insertIdx = i + 1; }
+  }
+  var prevStep = S.steps[insertIdx - 1];
+  var nextStep = S.steps[insertIdx];
+  var newOffset = (prevStep.offset + nextStep.offset) / 2;
+  var newStep = {
+    offset: Math.round(newOffset * 20) / 20,
+    opacity: (prevStep.opacity + nextStep.opacity) / 2,
+    x: Math.round((prevStep.x + nextStep.x) / 2),
+    y: Math.round((prevStep.y + nextStep.y) / 2),
+    scale: Math.round(((prevStep.scale + nextStep.scale) / 2) * 10) / 10,
+    rotate: Math.round((prevStep.rotate + nextStep.rotate) / 2),
+  };
+  S.steps.splice(insertIdx, 0, newStep);
+  S.selectedStep = insertIdx;
+  S.activePreset = null;
+  renderSteps();
+  updateAll();
+});
+
+// ============ SIMPLE MODE BINDINGS ============
+function bindSlider(id, setter) {
+  var slider = document.getElementById(id);
+  var numInput = document.getElementById(id + 'Num');
+  slider.addEventListener('input', function() {
+    var v = parseFloat(this.value);
+    setter(v);
+    numInput.value = v;
+    S.activePreset = null;
+    updateAll();
+  });
+  numInput.addEventListener('input', function() {
+    var v = parseFloat(this.value);
+    if (isNaN(v)) return;
+    setter(v);
+    // Clamp slider to its range but allow numInput to go beyond
+    var sv = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), v));
+    slider.value = sv;
+    S.activePreset = null;
+    updateAll();
+  });
+}
+bindSlider('duration', function(v) { S.duration = v; });
+bindSlider('delay', function(v) { S.delay = v; });
+bindSlider('fromOpacity', function(v) { S.from.opacity = v; });
+bindSlider('fromX', function(v) { S.from.x = v; });
+bindSlider('fromY', function(v) { S.from.y = v; });
+bindSlider('fromScale', function(v) { S.from.scale = v; });
+bindSlider('fromRotate', function(v) { S.from.rotate = v; });
+bindSlider('toOpacity', function(v) { S.to.opacity = v; });
+bindSlider('toX', function(v) { S.to.x = v; });
+bindSlider('toY', function(v) { S.to.y = v; });
+bindSlider('toScale', function(v) { S.to.scale = v; });
+bindSlider('toRotate', function(v) { S.to.rotate = v; });
+document.getElementById('easing').addEventListener('change', function() { S.easing = this.value; S.activePreset = null; updateAll(); });
+document.getElementById('triggerName').addEventListener('input', function() { S.triggerName = this.value; updateCode(); });
+document.getElementById('enterLeave').addEventListener('change', function() { S.enterLeave = this.checked; updateCode(); });
+
+function syncSlider(id, val) {
+  var slider = document.getElementById(id);
+  var numInput = document.getElementById(id + 'Num');
+  slider.value = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), val));
+  numInput.value = val;
+}
+
+function syncTimingUI() {
+  syncSlider('duration', S.duration);
+  syncSlider('delay', S.delay);
+  document.getElementById('easing').value = S.easing;
+}
+
+function syncSimpleUI() {
+  syncSlider('fromOpacity', S.from.opacity);
+  syncSlider('fromX', S.from.x);
+  syncSlider('fromY', S.from.y);
+  syncSlider('fromScale', S.from.scale);
+  syncSlider('fromRotate', S.from.rotate);
+  syncSlider('toOpacity', S.to.opacity);
+  syncSlider('toX', S.to.x);
+  syncSlider('toY', S.to.y);
+  syncSlider('toScale', S.to.scale);
+  syncSlider('toRotate', S.to.rotate);
+}
+
+// ============ TABS ============
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var tab = btn.dataset.tab;
+    document.getElementById('previewTab').style.display = tab === 'preview' ? 'flex' : 'none';
+    document.getElementById('codeTab').style.display = tab === 'code' ? 'flex' : 'none';
+    updateCode();
+  });
+});
+
+// ============ UPDATE ============
+function updateAll() {
+  updatePreview();
+  updateCode();
+  // Highlight active preset
+  document.querySelectorAll('.preset-btn').forEach(function(b) {
+    b.classList.toggle('active', b.textContent === S.activePreset);
+  });
+}
+
+function updatePreview() {
+  var first = S.mode === 'simple' ? S.from : S.steps[0];
+  ghostBox.style.transform = buildTransform(first);
+  ghostBox.textContent = S.mode === 'simple' ? 'from' : '0%';
+
+  var last = S.mode === 'simple' ? S.to : S.steps[S.steps.length - 1];
+  animBox.style.transition = 'none';
+  animBox.style.opacity = last.opacity;
+  animBox.style.transform = buildTransform(last);
+
+  var total = S.duration + S.delay;
+  totalTimeEl.textContent = total + 'ms';
+  var html = '<span class="chip">' + S.duration + 'ms</span>';
+  if (S.delay > 0) html += '<span class="chip">delay ' + S.delay + 'ms</span>';
+  html += '<span class="chip">' + S.easing + '</span>';
+  if (S.mode === 'keyframes') html += '<span class="chip">' + S.steps.length + ' steps</span>';
+  chipsEl.innerHTML = html;
+}
+
+function updateCode() {
+  var code = generateCode();
+  codeOutput.textContent = code;
+  var n = S.triggerName;
+  if (S.mode === 'keyframes') {
+    importLine.textContent = "import { trigger, state, style, animate, transition, keyframes } from '@angular/animations';";
+  } else {
+    importLine.textContent = "import { trigger, state, style, animate, transition } from '@angular/animations';";
+  }
+  usageOutput.textContent = "@Component({\n  animations: [ /* paste trigger here */ ]\n})\n\n// In template:\n<div [@" + n + "]" + (S.enterLeave ? "" : '="state"') + "> ... </div>";
+}
+
+// ============ PLAY ============
+var isPlaying = false;
+var dynamicStyle = null;
+
+playBtn.addEventListener('click', function() {
+  if (isPlaying) return;
+  isPlaying = true;
+  playBtn.disabled = true;
+  playBtn.textContent = 'Playing...';
+  progressFill.style.width = '0%';
+
+  var total = S.duration + S.delay;
+
+  if (S.mode === 'simple') {
+    // Simple: transition-based
+    animBox.style.animation = '';
+    animBox.style.transition = 'none';
+    animBox.style.opacity = S.from.opacity;
+    animBox.style.transform = buildTransform(S.from);
+    void animBox.offsetWidth;
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        animBox.style.transition = 'all ' + S.duration + 'ms ' + S.easing + ' ' + S.delay + 'ms';
+        animBox.style.opacity = S.to.opacity;
+        animBox.style.transform = buildTransform(S.to);
+        startProgress(total);
+        endAfter(total);
+      });
+    });
+  } else {
+    // Keyframes: CSS @keyframes
+    if (dynamicStyle) dynamicStyle.remove();
+    dynamicStyle = document.createElement('style');
+    var kf = '@keyframes simPreview {\n';
+    S.steps.forEach(function(step) {
+      kf += '  ' + Math.round(step.offset * 100) + '% {\n';
+      kf += '    opacity: ' + step.opacity + ';\n';
+      kf += '    transform: ' + buildTransform(step) + ';\n';
+      kf += '  }\n';
+    });
+    kf += '}';
+    dynamicStyle.textContent = kf;
+    document.head.appendChild(dynamicStyle);
+
+    animBox.style.transition = 'none';
+    animBox.style.animation = 'none';
+    void animBox.offsetWidth;
+
+    var delayStr = S.delay > 0 ? S.delay + 'ms' : '0ms';
+    animBox.style.animation = 'simPreview ' + S.duration + 'ms ' + S.easing + ' ' + delayStr + ' 1 forwards';
+
+    startProgress(total);
+    endAfter(total);
+  }
+});
+
+function startProgress(total) {
+  var start = performance.now();
+  function tick(now) {
+    var pct = Math.min(100, ((now - start) / total) * 100);
+    progressFill.style.width = pct + '%';
+    if (pct < 100) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function endAfter(total) {
+  setTimeout(function() {
+    isPlaying = false;
+    playBtn.disabled = false;
+    playBtn.innerHTML = '&#9654;  Play Animation';
+    progressFill.style.width = '0%';
+    animBox.style.animation = '';
+    // Reset to final state
+    var last = S.mode === 'simple' ? S.to : S.steps[S.steps.length - 1];
+    animBox.style.transition = 'none';
+    animBox.style.opacity = last.opacity;
+    animBox.style.transform = buildTransform(last);
+  }, total + 150);
+}
+
+// ============ COPY CODE ============
+copyBtn.addEventListener('click', function() {
+  navigator.clipboard.writeText(generateCode()).then(function() {
+    copyBtn.textContent = '\u2713 Copied!';
+    copyBtn.classList.add('copied');
+    setTimeout(function() { copyBtn.textContent = 'Copy Code'; copyBtn.classList.remove('copied'); }, 2000);
+  });
+});
+
+// ============ URL STATE (share links) ============
+function encodeState() {
+  var obj = {
+    m: S.mode === 'simple' ? 's' : 'k',
+    d: S.duration, dl: S.delay, e: S.easing,
+    n: S.triggerName, el: S.enterLeave ? 1 : 0
+  };
+  if (S.mode === 'simple') {
+    obj.f = [S.from.opacity, S.from.x, S.from.y, S.from.scale, S.from.rotate];
+    obj.t = [S.to.opacity, S.to.x, S.to.y, S.to.scale, S.to.rotate];
+  } else {
+    obj.st = S.steps.map(function(s) {
+      return [s.offset, s.opacity, s.x, s.y, s.scale, s.rotate];
+    });
+  }
+  try {
+    var json = JSON.stringify(obj);
+    var encoded = btoa(unescape(encodeURIComponent(json)));
+    return encoded;
+  } catch(e) { return ''; }
+}
+
+function decodeState(hash) {
+  try {
+    var json = decodeURIComponent(escape(atob(hash)));
+    var obj = JSON.parse(json);
+    S.mode = obj.m === 'k' ? 'keyframes' : 'simple';
+    S.duration = obj.d; S.delay = obj.dl; S.easing = obj.e;
+    if (obj.n) S.triggerName = obj.n;
+    S.enterLeave = obj.el === 1;
+    if (S.mode === 'simple' && obj.f && obj.t) {
+      S.from = { opacity: obj.f[0], x: obj.f[1], y: obj.f[2], scale: obj.f[3], rotate: obj.f[4] };
+      S.to = { opacity: obj.t[0], x: obj.t[1], y: obj.t[2], scale: obj.t[3], rotate: obj.t[4] };
+    }
+    if (S.mode === 'keyframes' && obj.st) {
+      S.steps = obj.st.map(function(a) {
+        return { offset: a[0], opacity: a[1], x: a[2], y: a[3], scale: a[4], rotate: a[5] };
+      });
+      S.selectedStep = 0;
+    }
+    return true;
+  } catch(e) { return false; }
+}
+
+function pushState() {
+  var encoded = encodeState();
+  if (encoded) {
+    history.replaceState(null, '', '#' + encoded);
+  }
+}
+
+// Share button
+var shareBtn = document.getElementById('shareBtn');
+shareBtn.addEventListener('click', function() {
+  pushState();
+  var url = window.location.href;
+  navigator.clipboard.writeText(url).then(function() {
+    shareBtn.innerHTML = '&#10003; Link Copied!';
+    shareBtn.classList.add('copied');
+    setTimeout(function() { shareBtn.innerHTML = '&#128279; Copy Link'; shareBtn.classList.remove('copied'); }, 2000);
+  });
+});
+
+// ============ INIT ============
+// Restore from URL hash if present
+var initHash = window.location.hash.replace(/^#/, '');
+if (initHash && decodeState(initHash)) {
+  // Restore UI
+  document.getElementById('triggerName').value = S.triggerName;
+  document.getElementById('enterLeave').checked = S.enterLeave;
+  document.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.mode === S.mode); });
+  document.getElementById('simplePanel').style.display = S.mode === 'simple' ? 'block' : 'none';
+  document.getElementById('keyframesPanel').style.display = S.mode === 'keyframes' ? 'block' : 'none';
+}
+renderPresets();
+syncTimingUI();
+syncSimpleUI();
+if (S.mode === 'keyframes') renderSteps();
+updateAll();
+
+// Update URL hash on every change (debounced)
+var hashTimer = null;
+var origUpdateAll = updateAll;
+updateAll = function() {
+  origUpdateAll();
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(pushState, 300);
+};
+</script>
+</body>
+</html>
